@@ -162,6 +162,7 @@
                 <module>servlet-filterlistener</module>
                 <module>servlet-security</module>
                 <module>shopping-cart</module>
+                <module>spring-wicket</module>
                 <module>tasks</module>
                 <module>tasks-jsf</module>
                 <module>tasks-rs</module>

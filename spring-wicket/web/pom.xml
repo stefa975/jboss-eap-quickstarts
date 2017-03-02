@@ -84,17 +84,23 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Wicket -->
+        <dependency>
+            <groupId>org.apache.wicket</groupId>
+            <artifactId>wicket-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.wicket</groupId>
+            <artifactId>wicket-spring</artifactId>
+        </dependency>
+
         <!-- Wicket Java EE integration. -->
         <dependency>
             <groupId>net.ftlines.wicket-cdi</groupId>
             <artifactId>wicket-cdi</artifactId>
         </dependency>
 
-        <!-- Wicket -->
-        <dependency>
-            <groupId>org.apache.wicket</groupId>
-            <artifactId>wicket-core</artifactId>
-        </dependency>
 
 
     </dependencies>

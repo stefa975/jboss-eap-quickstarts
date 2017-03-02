@@ -17,7 +17,7 @@
 
     <!-- Enable Wicket -->
     <filter>
-        <filter-name>Wicket</filter-name>
+        <filter-name>WicketCDI</filter-name>
         <filter-class>org.apache.wicket.protocol.http.WicketFilter</filter-class>
         <init-param>
             <!-- Specify the "entry point" for Wicket to configure itself 
@@ -29,10 +29,27 @@
 
     <!-- Have wicket manage the context root -->
     <filter-mapping>
-        <filter-name>Wicket</filter-name>
-        <url-pattern>/*</url-pattern>
+        <filter-name>WicketCDI</filter-name>
+        <url-pattern>/cdi/*</url-pattern>
     </filter-mapping>
 
+    <!-- Enable Wicket -->
+    <filter>
+        <filter-name>WicketSpring</filter-name>
+        <filter-class>org.apache.wicket.protocol.http.WicketFilter</filter-class>
+        <init-param>
+            <!-- Specify the "entry point" for Wicket to configure itself
+                from -->
+            <param-name>applicationClassName</param-name>
+            <param-value>org.jboss.as.quickstarts.springwicket.web.WicketSpringApplication</param-value>
+        </init-param>
+    </filter>
+
+    <!-- Have wicket manage the context root -->
+    <filter-mapping>
+        <filter-name>WicketSpring</filter-name>
+        <url-pattern>/spring/*</url-pattern>
+    </filter-mapping>
     <!-- A message displayed on the page, externalized into web.xml -->
     <env-entry>
         <env-entry-name>welcomeMessage</env-entry-name>
