@@ -1,0 +1,88 @@
+# Change the default configuration for the ejb-multi-server quickstart
+
+# Stop the preconfigured server for the domain
+# First stop the default servers and block until the server is down
+/host=master/server-config=server-one:stop(blocking=true)
+/host=master/server-config=server-two:stop(blocking=true)
+
+# Remove the default server configuration and server-groups
+/host=master/server-config=server-one:remove
+/host=master/server-config=server-two:remove
+/host=master/server-config=server-three:remove
+/server-group=main-server-group:remove
+/server-group=other-server-group:remove
+
+# Configure the domain for the quickstart ejb-multi-server
+
+# Batch the commands
+batch
+
+# Disable the local authentication for applications
+/host=master/core-service=management/security-realm=ApplicationRealm/authentication=local:remove
+
+/profile=default/subsystem=ejb3:write-attribute(name=default-missing-method-permissions-deny-access, value=false)
+/profile=ha/subsystem=ejb3:write-attribute(name=default-missing-method-permissions-deny-access, value=false)
+
+# Set the property for unique Tx node identifier
+/profile=default/subsystem=transactions:write-attribute(name=node-identifier,value="${txNodeIdentifier}"
+/profile=ha/subsystem=transactions:write-attribute(name=node-identifier,value="${txNodeIdentifier}"
+/profile=full/subsystem=transactions:write-attribute(name=node-identifier,value="${txNodeIdentifier}"
+
+# Configure the connection from the main server to "one" and "two"
+# This is to use the application "one" and "two" located at the remote server
+#
+# Add the socket binding to the full-sockets, used by the app-main server
+/socket-binding-group=full-sockets/remote-destination-outbound-socket-binding=remote-ejb-1:add(host=localhost, port=8180)
+/socket-binding-group=full-sockets/remote-destination-outbound-socket-binding=remote-ejb-2:add(host=localhost, port=8280)
+
+# Add the outbound connections to the remoting subsystem of the full-profile used by app-main server
+/profile=full/subsystem=remoting/remote-outbound-connection=remote-ejb-connection-1:add(outbound-socket-binding-ref=remote-ejb-1, protocol=http-remoting, security-realm=ejb-security-realm, username=quickuser)
+/profile=full/subsystem=remoting/remote-outbound-connection=remote-ejb-connection-1/property=SASL_POLICY_NOANONYMOUS:add(value=false)
+/profile=full/subsystem=remoting/remote-outbound-connection=remote-ejb-connection-1/property=SSL_ENABLED:add(value=false)
+/profile=full/subsystem=remoting/remote-outbound-connection=remote-ejb-connection-2:add(outbound-socket-binding-ref=remote-ejb-2, protocol=http-remoting, security-realm=ejb-security-realm, username=quickuser)
+/profile=full/subsystem=remoting/remote-outbound-connection=remote-ejb-connection-2/property=SASL_POLICY_NOANONYMOUS:add(value=false)
+/profile=full/subsystem=remoting/remote-outbound-connection=remote-ejb-connection-2/property=SSL_ENABLED:add(value=false)
+
+# Add a pool for SLSB, otherwise the scoped-context EJB invocation will fail because it 
+# can not commit a transaction after executing the SLSB as the bean (with context) is destroyed before !!
+/profile=full/subsystem=ejb3:write-attribute(name=default-slsb-instance-pool, value=slsb-strict-max-pool)
+
+# Add the security realms with the secret (password base64) values for the server communication
+/host=master/core-service=management/security-realm=ejb-security-realm:add()
+/host=master/core-service=management/security-realm=ejb-security-realm/server-identity=secret:add(value=cXVpY2sxMjMr)
+
+# Add the main-server group and the server, which handle the standalone client requests
+/server-group=quickstart-ejb-multi-main-server:add(profile=full,socket-binding-group=full-sockets)
+/server-group=quickstart-ejb-multi-main-server/jvm=default:add()
+/host=master/server-config=app-main:add(auto-start=true, group=quickstart-ejb-multi-main-server)
+/host=master/server-config=app-main/system-property=txNodeIdentifier:add(value=main)
+
+# Add the app-server group and the servers for the destination application
+# app-one will be a clustered application, so use HA and add two servers
+/server-group=quickstart-ejb-multi-appOne-server:add(profile=ha,socket-binding-group=ha-sockets)
+/server-group=quickstart-ejb-multi-appOne-server/jvm=default:add()
+/host=master/server-config=app-oneA:add(auto-start=true, group=quickstart-ejb-multi-appOne-server, socket-binding-port-offset=100)
+/host=master/server-config=app-oneA/system-property=txNodeIdentifier:add(value=oneA)
+/host=master/server-config=app-oneB:add(auto-start=true, group=quickstart-ejb-multi-appOne-server, socket-binding-port-offset=700)
+/host=master/server-config=app-oneB/system-property=txNodeIdentifier:add(value=oneB)
+
+# app two is not a clustered application, so use the default profile
+/server-group=quickstart-ejb-multi-appTwo-server:add(profile=default,socket-binding-group=standard-sockets)
+/server-group=quickstart-ejb-multi-appTwo-server/jvm=default:add()
+/host=master/server-config=app-twoA:add(auto-start=true, group=quickstart-ejb-multi-appTwo-server, socket-binding-port-offset=200)
+/host=master/server-config=app-twoA/system-property=txNodeIdentifier:add(value=twoA)
+/host=master/server-config=app-twoB:add(auto-start=true, group=quickstart-ejb-multi-appTwo-server, socket-binding-port-offset=800)
+/host=master/server-config=app-twoB/system-property=txNodeIdentifier:add(value=twoB)
+
+# Run the batch
+run-batch
+
+# Without restart, outside the batch, there are different problems
+:restart-servers
+
+# Finally start the configured servers
+/host=master/server-config=app-oneA:start
+/host=master/server-config=app-oneB:start
+/host=master/server-config=app-twoA:start
+/host=master/server-config=app-twoB:start
+/host=master/server-config=app-main:start
